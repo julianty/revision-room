@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePauseToComment } from "@/lib/pause-to-comment";
 import TicketList from "@/components/TicketList";
 import { formatTimestampLabel } from "@/lib/timestamp-label";
+import { DEFAULT_TRACK_ID, DRAFTS, findDraft } from "@/lib/drafts";
 import type { RevisionSession, SpokenComment } from "@/lib/ticket-schema";
 
 function formatTimestamp(seconds: number): string {
@@ -15,6 +16,8 @@ function formatTimestamp(seconds: number): string {
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [trackId, setTrackId] = useState(DEFAULT_TRACK_ID);
+  const draft = findDraft(trackId) ?? DRAFTS[0];
   const {
     comments,
     isListening,
@@ -24,7 +27,7 @@ export default function Home() {
     captureMode,
     setCaptureMode,
     addTypedComment,
-  } = usePauseToComment(audioRef);
+  } = usePauseToComment(audioRef, trackId);
 
   const [draftComment, setDraftComment] = useState("");
 
@@ -81,7 +84,7 @@ export default function Home() {
       const response = await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comments, roundNumber: 1 }),
+        body: JSON.stringify({ comments, trackId, roundNumber: 1 }),
       });
       if (!response.ok) {
         throw new Error(`Session request failed with status ${response.status}`);
@@ -107,10 +110,29 @@ export default function Home() {
         </header>
 
         <section className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {DRAFTS.map((candidate) => (
+              <button
+                key={candidate.trackId}
+                type="button"
+                onClick={() => setTrackId(candidate.trackId)}
+                className={
+                  candidate.trackId === trackId
+                    ? "rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white"
+                    : "rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
+                }
+              >
+                {candidate.title}
+              </button>
+            ))}
+          </div>
           <audio
+            // Keyed by draft so switching tabs loads that draft from the top
+            // rather than carrying the previous track's playhead across.
+            key={draft.trackId}
             ref={audioRef}
             controls
-            src="/fixtures/salt-and-water.mp3"
+            src={draft.audioSrc}
             className="w-full"
           />
           <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -194,11 +216,12 @@ export default function Home() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Captured comments
+            Captured comments — {draft.title}
           </h2>
           {comments.length === 0 ? (
             <p className="text-sm text-zinc-500">
-              No comments captured yet. Pause the draft and give your reaction.
+              No comments on {draft.title} yet. Pause the draft and give your
+              reaction.
             </p>
           ) : (
             <ol className="flex flex-col gap-2">

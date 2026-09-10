@@ -3,6 +3,7 @@
 // persistence and demo replay live in session-store.
 
 import { buildRevisionTickets } from "@/lib/tickets";
+import { DEFAULT_TRACK_ID, findDraft } from "@/lib/drafts";
 import { isDemoMode, loadRecordedSession, saveRevisionSession } from "@/lib/session-store";
 import type { RevisionSession, SpokenComment } from "@/lib/ticket-schema";
 
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     comments: SpokenComment[];
+    trackId?: string;
     roundNumber?: number;
   };
 
@@ -33,12 +35,19 @@ export async function POST(request: Request) {
     return Response.json({ error: "No spoken comments in this round." }, { status: 400 });
   }
 
-  const tickets = await buildRevisionTickets(body.comments);
+  // Which draft this round is about. Structuring needs the runtime to reason
+  // about where in the song a comment landed.
+  const draft = findDraft(body.trackId ?? DEFAULT_TRACK_ID);
+  if (!draft) {
+    return Response.json({ error: `Unknown draft: ${body.trackId}` }, { status: 400 });
+  }
+
+  const tickets = await buildRevisionTickets(body.comments, draft);
   tickets.sort((a, b) => a.trackTimestamp - b.trackTimestamp);
 
   const session: RevisionSession = {
     sessionId: crypto.randomUUID(),
-    trackId: "salt-and-water",
+    trackId: draft.trackId,
     createdAt: new Date().toISOString(),
     comments: body.comments,
     tickets,

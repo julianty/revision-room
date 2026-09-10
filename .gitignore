@@ -39,5 +39,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# The working copy of the draft; the fixture under public/ is the one the app serves.
+# Working copies of the drafts; the fixtures under public/ are what the app serves.
 /Salt_and_Water.mp3
+/First_Light_Ignition.mp3

@@ -28,7 +28,11 @@ over time rather than estimate.
 
 Real and exercised in this build:
 
-- **Pause-to-comment capture.** An `<audio>` element plays the draft. Pausing it (button or
+- **Two drafts, tabbed.** The catalog in `src/lib/drafts.ts` lists the drafts on the table
+  ("Salt and Water", "First Light Ignition"); the tab strip above the player switches between
+  them, each keeps its own captured comments, and the round is structured against whichever
+  draft is selected — its runtime is what the structuring prompt reasons about.
+- **Pause-to-comment capture.** An `<audio>` element plays the selected draft. Pausing it (button or
   spacebar) records `audioEl.currentTime` and opens a comment turn; resuming (or, in typed
   mode, hitting the "Add comment" button) closes it and appends a `SpokenComment` with the
   reaction back-off applied (`anchorTimestamp = pausedAt - 2.5s`, floored at 0). This lives in
@@ -60,9 +64,11 @@ Real and exercised in this build:
   the ticket list as a replay.
 
 - **The recorded session on disk is real.** `out/session.json` was produced by a live run
-  against the current draft: three comments typed while listening to `salt-and-water.mp3`,
+  against a real draft: three comments typed while listening to `salt-and-water.mp3`,
   structured by the `claude` subprocess into tickets anchored at 0:02, 1:26 and 2:47, with
   sections inferred as intro, chorus and outro. That recording is what `DEMO_MODE=1` replays.
+  It is a Salt and Water round; no recorded round exists for First Light Ignition, so the
+  demo replay always shows the Salt and Water tickets regardless of the selected tab.
 
 Worth knowing:
 
@@ -130,7 +136,8 @@ Live path — capture real comments and structure them for real:
 npm run dev
 ```
 
-Open `http://localhost:3000` in Chrome, play the draft (`salt-and-water.mp3`), pause a few
+Open `http://localhost:3000` in Chrome, pick a draft from the tabs above the player, play it,
+pause a few
 times to leave comments (typing or speaking), then click "Build revision tickets." This calls
 the `claude` CLI and writes a fresh `out/session.json`.
 
@@ -166,8 +173,10 @@ assumed:
   write left behind.
 - **Any real integration with an existing product surface, or a database.** No Supabase, no
   external service beyond the `claude` CLI subprocess and the browser's own speech APIs.
-- **Music generation or audio editing.** The draft track is fixed; nothing in this build writes
-  or modifies audio.
+- **Music generation or audio editing.** The drafts are fixed files served from `public/`;
+  nothing in this build writes or modifies audio.
+- **Uploading a draft, or any writer-side catalog management.** Adding a draft means adding a
+  row to `src/lib/drafts.ts` and a file under `public/fixtures/`.
 - **Browser support beyond Chrome**, tests, CI, containerization, error handling beyond the
   happy path, retries, streaming, or latency work. None of these were in scope for a 90-minute
   build of one narrow path.
@@ -191,6 +200,7 @@ build has, and it was verified directly from a shell before anything was built o
 - Speech-to-text uses Chrome's built-in `SpeechRecognition` API. This is free and requires no
   key, but it is not local or offline — Chrome streams the captured audio to Google's servers
   for transcription. Revision Room should not be described as an offline tool.
-- Audio fixture: `public/fixtures/salt-and-water.mp3` ("Salt and Water"). Provenance:
-  **[PLACEHOLDER — provenance not recorded; repository owner to confirm and replace this
-  line before this README is presented or shared.]**
+- Audio fixtures: `public/fixtures/salt-and-water.mp3` ("Salt and Water") and
+  `public/fixtures/first-light-ignition.mp3` ("First Light Ignition"). Provenance:
+  **[PLACEHOLDER — provenance not recorded for either track; repository owner to confirm and
+  replace this line before this README is presented or shared.]**

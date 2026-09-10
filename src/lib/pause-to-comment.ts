@@ -48,8 +48,15 @@ const REACTION_BACK_OFF_SECONDS = 2.5;
 // first-class path rather than a fallback — both produce the same SpokenComment.
 export type CaptureMode = "speak" | "type";
 
-export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | null>) {
-  const [comments, setComments] = useState<SpokenComment[]>([]);
+export function usePauseToComment(
+  audioRef: React.RefObject<HTMLAudioElement | null>,
+  trackId: string
+) {
+  // Comments are kept per draft: tabbing to another song opens its own list
+  // rather than pooling reactions to two different tracks into one round.
+  const [commentsByTrack, setCommentsByTrack] = useState<
+    Record<string, SpokenComment[]>
+  >({});
   const [captureMode, setCaptureMode] = useState<CaptureMode>("type");
   const [isListening, setIsListening] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
@@ -66,19 +73,26 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
   const hasFloorRef = useRef(false);
   const captureModeRef = useRef<CaptureMode>(captureMode);
   captureModeRef.current = captureMode;
+  // Which draft has the floor right now, read from inside long-lived listeners.
+  const trackIdRef = useRef(trackId);
+  trackIdRef.current = trackId;
 
   // The one place a comment is recorded, whether it was spoken or typed. The
   // anchor is backed off here so neither path can forget to do it.
   const appendComment = useCallback((capturedPausedAt: number, transcript: string) => {
-    setComments((prev) => [
+    const draftId = trackIdRef.current;
+    setCommentsByTrack((prev) => ({
       ...prev,
-      {
-        id: crypto.randomUUID(),
-        pausedAt: capturedPausedAt,
-        anchorTimestamp: Math.max(0, capturedPausedAt - REACTION_BACK_OFF_SECONDS),
-        transcript,
-      },
-    ]);
+      [draftId]: [
+        ...(prev[draftId] ?? []),
+        {
+          id: crypto.randomUUID(),
+          pausedAt: capturedPausedAt,
+          anchorTimestamp: Math.max(0, capturedPausedAt - REACTION_BACK_OFF_SECONDS),
+          transcript,
+        },
+      ],
+    }));
   }, []);
 
   // Typed comments anchor to wherever the draft is sitting — the pause position
@@ -233,7 +247,7 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
   }, [audioRef, appendComment]);
 
   return {
-    comments,
+    comments: commentsByTrack[trackId] ?? [],
     isListening,
     liveTranscript,
     pausedAt,
