@@ -59,21 +59,18 @@ Real and exercised in this build:
   element's live state, or the `claude` subprocess. The page loads it automatically and labels
   the ticket list as a replay.
 
-Stubbed / not what it looks like:
+- **The recorded session on disk is real.** `out/session.json` was produced by a live run
+  against the current draft: three comments typed while listening to `salt-and-water.mp3`,
+  structured by the `claude` subprocess into tickets anchored at 0:02, 1:26 and 2:47, with
+  sections inferred as intro, chorus and outro. That recording is what `DEMO_MODE=1` replays.
 
-- **The recorded `out/session.json` is stale relative to the current fixture.** It was
-  produced against an earlier placeholder scratch track (`trackId: "draft-track"`), which has
-  since been replaced in `public/fixtures/` by the real draft, `salt-and-water.mp3` (the
-  current API route stamps new sessions with `trackId: "salt-and-water"`). The quotes and
-  timestamps in the committed `out/session.json` do not correspond to what's actually in
-  `salt-and-water.mp3` — they were sensible for a different piece of audio. The structuring
-  step itself works; the specific recording on disk needs to be redone against the current
-  track before it's shown as "this is what the app produced," and DEMO_MODE will replay
-  whatever recording exists until that happens.
+Worth knowing:
+
 - **Section inference has no ground truth to check against.** The model is told the draft's
   total runtime and asked to infer the section (verse, chorus, etc.) from timestamp and
   wording alone, because no real section map is available to this app. That's a reasonable
-  approach, but it means a `section` label is the model's best guess, not a verified fact.
+  approach, and the labels it produced on the current draft look right, but a `section` label
+  is the model's best guess rather than a verified fact.
 
 Not built at all (see section 7):
 
@@ -146,10 +143,8 @@ npm run demo
 This runs `next dev` with `DEMO_MODE=1` and loads `out/session.json` straight into the page on
 open, so the ticket list shows without a microphone, a network call, or a live subprocess.
 
-**Caveat:** the `out/session.json` currently committed in this repo was recorded against an
-earlier placeholder track, not the `salt-and-water.mp3` fixture now in `public/fixtures/` — see
-section 3. Re-running the live path once, saving that output over the current file, is what
-should happen before this is actually presented as "here's what the app produced."
+The `out/session.json` committed in this repo came from exactly that live path, run against
+the current draft, so the demo replays real output rather than hand-written fixture data.
 
 ## 7. What was not built, and why
 
@@ -177,8 +172,7 @@ assumed:
   happy path, retries, streaming, or latency work. None of these were in scope for a 90-minute
   build of one narrow path.
 
-What two more hours would buy: re-recording `out/session.json` against `salt-and-water.mp3`
-so the demo data matches the demo track; the Phase 3 spoken follow-up and answer-merge; and
+What two more hours would buy: the Phase 3 spoken follow-up and answer-merge; and
 some minimal handling for a `claude` subprocess failure or timeout (today a failed structuring
 call surfaces as a generic error message on the page, not a graceful degradation).
 
