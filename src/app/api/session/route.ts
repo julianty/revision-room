@@ -9,6 +9,13 @@ import type { RevisionSession, SpokenComment } from "@/lib/ticket-schema";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Demo mode hands the recorded round straight to the page on load, so the
+// presentation can show real tickets without a microphone or a network.
+export async function GET() {
+  if (!isDemoMode()) return Response.json(null, { status: 404 });
+  return Response.json(await loadRecordedSession());
+}
+
 export async function POST(request: Request) {
   if (isDemoMode()) {
     const recorded = await loadRecordedSession();
@@ -19,6 +26,12 @@ export async function POST(request: Request) {
     comments: SpokenComment[];
     roundNumber?: number;
   };
+
+  // Nothing was said, so there is no round to structure — and no reason to
+  // overwrite the recorded session the demo replays.
+  if (!body.comments?.length) {
+    return Response.json({ error: "No spoken comments in this round." }, { status: 400 });
+  }
 
   const tickets = await buildRevisionTickets(body.comments);
   tickets.sort((a, b) => a.trackTimestamp - b.trackTimestamp);

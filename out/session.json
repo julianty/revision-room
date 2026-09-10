@@ -1,0 +1,82 @@
+{
+  "sessionId": "f55f6bbd-6ef5-4a44-9fbc-f3a669ad09c8",
+  "trackId": "draft-track",
+  "createdAt": "2026-09-10T02:17:24.917Z",
+  "comments": [
+    {
+      "id": "c1",
+      "pausedAt": 14.2,
+      "anchorTimestamp": 11.7,
+      "transcript": "ok the opening line is good, that invoice queue thing is actually funny, keep that"
+    },
+    {
+      "id": "c2",
+      "pausedAt": 31.9,
+      "anchorTimestamp": 29.4,
+      "transcript": "the chorus is fine but it feels a bit flat, I don't know, something about it"
+    },
+    {
+      "id": "c3",
+      "pausedAt": 49.6,
+      "anchorTimestamp": 47.1,
+      "transcript": "yeah verse two feels corny, synergy in the atrium, nobody talks like that"
+    },
+    {
+      "id": "c4",
+      "pausedAt": 66,
+      "anchorTimestamp": 63.5,
+      "transcript": "the vocal is way too quiet against the backing here, I can barely hear the words"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "adf27184-d53d-4423-b399-12aa922d823e",
+      "commentId": "c1",
+      "trackTimestamp": 11.7,
+      "timestampLabel": "0:12",
+      "quote": "ok the opening line is good, that invoice queue thing is actually funny, keep that",
+      "section": "verse 1",
+      "category": "lyrics",
+      "sentiment": "keep",
+      "action": "Keep the opening line of verse 1 as-is, including the invoice queue reference — client called it out as a highlight.",
+      "needsClarification": false
+    },
+    {
+      "id": "4198304e-b0da-4e68-8e84-9801c9cf177c",
+      "commentId": "c2",
+      "trackTimestamp": 29.4,
+      "timestampLabel": "0:29",
+      "quote": "the chorus is fine but it feels a bit flat, I don't know, something about it",
+      "section": "chorus",
+      "category": "other",
+      "sentiment": "unclear",
+      "action": "Follow up with the client to pin down what's making the chorus feel flat before touching it — could be melody, arrangement, or vocal delivery.",
+      "needsClarification": true
+    },
+    {
+      "id": "df0610da-668a-490a-b51f-01b33f631622",
+      "commentId": "c3",
+      "trackTimestamp": 47.1,
+      "timestampLabel": "0:47",
+      "quote": "yeah verse two feels corny, synergy in the atrium, nobody talks like that",
+      "section": "verse 2",
+      "category": "lyrics",
+      "sentiment": "change",
+      "action": "Rewrite the \"synergy in the atrium\" line in verse 2 with more natural, less corporate-sounding phrasing.",
+      "needsClarification": false
+    },
+    {
+      "id": "30cc2a87-6a9a-4b66-92ac-9c01e6e7d0f8",
+      "commentId": "c4",
+      "trackTimestamp": 63.5,
+      "timestampLabel": "1:04",
+      "quote": "the vocal is way too quiet against the backing here, I can barely hear the words",
+      "section": "final chorus",
+      "category": "mix",
+      "sentiment": "change",
+      "action": "Raise the lead vocal level relative to the backing track in the final chorus so the lyrics are intelligible.",
+      "needsClarification": false
+    }
+  ],
+  "roundNumber": 1
+}

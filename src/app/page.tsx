@@ -20,6 +20,20 @@ export default function Home() {
   const [session, setSession] = useState<RevisionSession | null>(null);
   const [isStructuring, setIsStructuring] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isReplay, setIsReplay] = useState(false);
+
+  // In demo mode the recorded revision round loads straight away, so the
+  // ticket list can be shown without a live capture or a live model call.
+  useEffect(() => {
+    fetch("/api/session")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((recorded: RevisionSession | null) => {
+        if (!recorded) return;
+        setSession(recorded);
+        setIsReplay(true);
+      })
+      .catch(() => {});
+  }, []);
 
   // Spacebar toggles play/pause, the same as clicking the transport, unless the
   // client is typing somewhere else on the page.
@@ -147,6 +161,7 @@ export default function Home() {
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
               Revision round {session.roundNumber} — tickets
+              {isReplay && " (replaying the recorded session)"}
             </h2>
             <TicketList tickets={session.tickets} />
           </section>
