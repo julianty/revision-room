@@ -1,80 +1,62 @@
 {
-  "sessionId": "f55f6bbd-6ef5-4a44-9fbc-f3a669ad09c8",
-  "trackId": "draft-track",
-  "createdAt": "2026-09-10T02:17:24.917Z",
+  "sessionId": "8933f627-2b28-410b-9693-d5d0bd8df4c5",
+  "trackId": "salt-and-water",
+  "createdAt": "2026-09-10T02:38:13.750Z",
   "comments": [
     {
-      "id": "c1",
-      "pausedAt": 14.2,
-      "anchorTimestamp": 11.7,
-      "transcript": "ok the opening line is good, that invoice queue thing is actually funny, keep that"
+      "id": "3c5bbe4a-9de8-4e03-ba2c-3516b46d39f2",
+      "pausedAt": 4.142564,
+      "anchorTimestamp": 1.6425640000000001,
+      "transcript": "I want a stronger opening. Maybe some drums"
     },
     {
-      "id": "c2",
-      "pausedAt": 31.9,
-      "anchorTimestamp": 29.4,
-      "transcript": "the chorus is fine but it feels a bit flat, I don't know, something about it"
+      "id": "0b6d3de4-ad29-4cae-81a9-ee5740aca15b",
+      "pausedAt": 88.305599,
+      "anchorTimestamp": 85.805599,
+      "transcript": "I don't like the echoing \"yeah\" just remove it"
     },
     {
-      "id": "c3",
-      "pausedAt": 49.6,
-      "anchorTimestamp": 47.1,
-      "transcript": "yeah verse two feels corny, synergy in the atrium, nobody talks like that"
-    },
-    {
-      "id": "c4",
-      "pausedAt": 66,
-      "anchorTimestamp": 63.5,
-      "transcript": "the vocal is way too quiet against the backing here, I can barely hear the words"
+      "id": "4a7b540d-14da-483d-be18-ed6956199102",
+      "pausedAt": 169.741757,
+      "anchorTimestamp": 167.241757,
+      "transcript": "Change \"to the sea\" to \"to the ocean\""
     }
   ],
   "tickets": [
     {
-      "id": "adf27184-d53d-4423-b399-12aa922d823e",
-      "commentId": "c1",
-      "trackTimestamp": 11.7,
-      "timestampLabel": "0:12",
-      "quote": "ok the opening line is good, that invoice queue thing is actually funny, keep that",
-      "section": "verse 1",
-      "category": "lyrics",
-      "sentiment": "keep",
-      "action": "Keep the opening line of verse 1 as-is, including the invoice queue reference — client called it out as a highlight.",
+      "id": "32f8efdb-8460-4f71-b74b-8f04a3791762",
+      "commentId": "3c5bbe4a-9de8-4e03-ba2c-3516b46d39f2",
+      "trackTimestamp": 1.6425640000000001,
+      "timestampLabel": "0:02",
+      "quote": "I want a stronger opening. Maybe some drums",
+      "section": "intro",
+      "category": "arrangement",
+      "sentiment": "change",
+      "action": "Add a drum element to the intro to give the opening more weight.",
       "needsClarification": false
     },
     {
-      "id": "4198304e-b0da-4e68-8e84-9801c9cf177c",
-      "commentId": "c2",
-      "trackTimestamp": 29.4,
-      "timestampLabel": "0:29",
-      "quote": "the chorus is fine but it feels a bit flat, I don't know, something about it",
+      "id": "71a1b9ce-a305-4826-a7b0-e1b4ee8ea770",
+      "commentId": "0b6d3de4-ad29-4cae-81a9-ee5740aca15b",
+      "trackTimestamp": 85.805599,
+      "timestampLabel": "1:26",
+      "quote": "I don't like the echoing \"yeah\" just remove it",
       "section": "chorus",
-      "category": "other",
-      "sentiment": "unclear",
-      "action": "Follow up with the client to pin down what's making the chorus feel flat before touching it — could be melody, arrangement, or vocal delivery.",
-      "needsClarification": true
-    },
-    {
-      "id": "df0610da-668a-490a-b51f-01b33f631622",
-      "commentId": "c3",
-      "trackTimestamp": 47.1,
-      "timestampLabel": "0:47",
-      "quote": "yeah verse two feels corny, synergy in the atrium, nobody talks like that",
-      "section": "verse 2",
-      "category": "lyrics",
+      "category": "vocals",
       "sentiment": "change",
-      "action": "Rewrite the \"synergy in the atrium\" line in verse 2 with more natural, less corporate-sounding phrasing.",
+      "action": "Remove the echoing \"yeah\" vocal ad-lib from the chorus.",
       "needsClarification": false
     },
     {
-      "id": "30cc2a87-6a9a-4b66-92ac-9c01e6e7d0f8",
-      "commentId": "c4",
-      "trackTimestamp": 63.5,
-      "timestampLabel": "1:04",
-      "quote": "the vocal is way too quiet against the backing here, I can barely hear the words",
-      "section": "final chorus",
-      "category": "mix",
+      "id": "45288f36-963e-4557-b579-83d9137ea2aa",
+      "commentId": "4a7b540d-14da-483d-be18-ed6956199102",
+      "trackTimestamp": 167.241757,
+      "timestampLabel": "2:47",
+      "quote": "Change \"to the sea\" to \"to the ocean\"",
+      "section": "outro",
+      "category": "lyrics",
       "sentiment": "change",
-      "action": "Raise the lead vocal level relative to the backing track in the final chorus so the lyrics are intelligible.",
+      "action": "Replace the lyric \"to the sea\" with \"to the ocean\" in the closing section.",
       "needsClarification": false
     }
   ],
