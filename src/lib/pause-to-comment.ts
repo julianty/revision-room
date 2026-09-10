@@ -15,15 +15,18 @@ type SpeechRecognitionEventLike = {
   results: ArrayLike<SpeechRecognitionResultLike>;
 };
 
+type SpeechRecognitionErrorEventLike = { error: string };
+
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   lang: string;
   start: () => void;
   stop: () => void;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
 };
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
@@ -49,7 +52,12 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const pausedAtRef = useRef<number | null>(null);
-  const transcriptRef = useRef("");
+  // What the engine has committed to, versus its running guess. Only the
+  // settled text becomes the comment; the guess is for the client to watch.
+  const settledTranscriptRef = useRef("");
+  const guessTranscriptRef = useRef("");
+  // True for as long as the client is paused and still has the floor.
+  const hasFloorRef = useRef(false);
 
   useEffect(() => {
     const audioEl = audioRef.current;
@@ -67,32 +75,76 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
     setIsSupported(true);
 
     const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = false;
+    // A comment is a whole thought with pauses in it, not one clean utterance, so
+    // the engine is told to keep listening across those gaps rather than closing
+    // the turn at the first breath.
+    recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "en-US";
+    recognition.maxAlternatives = 1;
+    // Matching the client's own English variant measurably improves recognition
+    // of their accent; anything non-English falls back to US English.
+    const preferred = typeof navigator !== "undefined" ? navigator.language : "en-US";
+    recognition.lang = preferred?.startsWith("en") ? preferred : "en-US";
 
     recognition.onresult = (event) => {
-      let latest = "";
+      let guess = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        latest += event.results[i][0].transcript;
+        const result = event.results[i];
+        if (result.isFinal) {
+          // Settled text accumulates: each new event carries only the segment
+          // that just closed, so overwriting here would drop the earlier ones.
+          settledTranscriptRef.current =
+            `${settledTranscriptRef.current} ${result[0].transcript}`.trim();
+        } else {
+          guess += result[0].transcript;
+        }
       }
-      transcriptRef.current = latest;
-      setLiveTranscript(latest);
+      guessTranscriptRef.current = guess;
+      setLiveTranscript(`${settledTranscriptRef.current} ${guess}`.trim());
     };
 
     recognition.onend = () => {
+      // Chrome drops the audio stream after a stretch of silence. The client is
+      // still paused and may only be gathering the thought, so the turn stays
+      // open rather than committing half a comment.
+      if (hasFloorRef.current) {
+        try {
+          recognition.start();
+          return;
+        } catch {
+          // Could not resume the stream — fall through and keep what was heard.
+        }
+      }
+
       setIsListening(false);
-      // Recognition can end on its own (silence timeout) while the client is
-      // still paused, thinking. Capture whatever it heard as the comment.
+      // The engine emits its corrected, high-confidence text as it winds down,
+      // which is why the comment is only ever committed here and never from the
+      // running guess on screen.
       const capturedAt = pausedAtRef.current;
-      const transcript = transcriptRef.current.trim();
+      const transcript = (
+        settledTranscriptRef.current || guessTranscriptRef.current
+      ).trim();
       if (capturedAt !== null && transcript.length > 0) {
         appendComment(capturedAt, transcript);
       }
+      pausedAtRef.current = null;
+      settledTranscriptRef.current = "";
+      guessTranscriptRef.current = "";
+      setLiveTranscript("");
     };
 
-    recognition.onerror = () => {
-      setIsListening(false);
+    recognition.onerror = (event) => {
+      // A refused microphone or missing device ends the turn for good. "no-speech"
+      // and the like just mean the client has not started talking yet, and the
+      // restart in onend keeps their turn open.
+      if (
+        event.error === "not-allowed" ||
+        event.error === "service-not-allowed" ||
+        event.error === "audio-capture"
+      ) {
+        hasFloorRef.current = false;
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current = recognition;
@@ -108,39 +160,34 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
           transcript,
         },
       ]);
-      transcriptRef.current = "";
-      setLiveTranscript("");
     }
 
     const handlePause = () => {
       const currentTime = audioEl.currentTime;
       pausedAtRef.current = currentTime;
-      transcriptRef.current = "";
+      settledTranscriptRef.current = "";
+      guessTranscriptRef.current = "";
+      hasFloorRef.current = true;
       setPausedAt(currentTime);
       setLiveTranscript("");
       setIsListening(true);
       try {
         recognition.start();
       } catch {
-        // Already started (StrictMode double-invoke or a stray pause event) — ignore.
+        // Already listening (StrictMode double-invoke or a stray pause event).
       }
     };
 
     const handlePlay = () => {
-      const capturedAt = pausedAtRef.current;
-      const transcript = transcriptRef.current.trim();
+      // Resuming hands the floor back to the track. Stopping asks the engine for
+      // its final read of what was said; onend commits the comment once it lands.
+      hasFloorRef.current = false;
+      setPausedAt(null);
       try {
         recognition.stop();
       } catch {
         // Not running — nothing to stop.
       }
-      if (capturedAt !== null && transcript.length > 0) {
-        appendComment(capturedAt, transcript);
-      }
-      pausedAtRef.current = null;
-      setPausedAt(null);
-      setIsListening(false);
-      setLiveTranscript("");
     };
 
     audioEl.addEventListener("pause", handlePause);
@@ -149,6 +196,7 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
     return () => {
       audioEl.removeEventListener("pause", handlePause);
       audioEl.removeEventListener("play", handlePlay);
+      hasFloorRef.current = false;
       try {
         recognition.stop();
       } catch {
