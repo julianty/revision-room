@@ -6,21 +6,17 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { RevisionTicket, SpokenComment } from "@/lib/ticket-schema";
+import { formatTimestampLabel } from "@/lib/timestamp-label";
 
 const execFileAsync = promisify(execFile);
 
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? "claude-sonnet-5";
 
-// The fixture track's known structure, used to ground section inference —
-// the model should not have to guess blind from wording alone.
-const TRACK_SECTION_MAP = `
-0:00-0:09 intro
-0:09-0:26 verse 1
-0:26-0:43 chorus
-0:43-1:00 verse 2
-1:00-1:16 final chorus
-(total length 1:16)
-`.trim();
+// How long the draft runs. The section map is deliberately not hardcoded: the
+// structure of a real draft is not known to this app, so section inference is
+// grounded in where the comment lands in the track and what the client said,
+// rather than in a fixture layout that would be wrong for any other song.
+const TRACK_DURATION_SECONDS = 178;
 
 const CATEGORIES: RevisionTicket["category"][] = [
   "lyrics",
@@ -33,13 +29,6 @@ const CATEGORIES: RevisionTicket["category"][] = [
 
 const SENTIMENTS: RevisionTicket["sentiment"][] = ["change", "keep", "unclear"];
 
-/** "1:07" style label for a number of seconds into the track. */
-export function formatTimestampLabel(seconds: number): string {
-  const whole = Math.max(0, Math.round(seconds));
-  const minutes = Math.floor(whole / 60);
-  const secs = whole % 60;
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
-}
 
 function buildPrompt(comments: SpokenComment[]): string {
   const commentBlocks = comments
@@ -61,8 +50,10 @@ Each comment's anchorTimestamp has already been backed off a couple of seconds f
 moment the client hit pause, because people pause just after the thing they reacted to,
 not during it. Treat anchorTimestamp as the point in the track the comment is about.
 
-Track section map (this fixture track is 1:16 long):
-${TRACK_SECTION_MAP}
+The draft runs ${formatTimestampLabel(TRACK_DURATION_SECONDS)}. Its section layout is
+not given to you: infer the section from where the comment lands in that runtime and
+from what the client actually said. Say null rather than guessing when the wording
+gives you nothing to go on.
 
 Comments:
 ${commentBlocks}

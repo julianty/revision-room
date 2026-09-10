@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SpokenComment } from "@/lib/ticket-schema";
 
 // Minimal local shape for the browser SpeechRecognition API. Not in lib.dom.d.ts,
@@ -43,8 +43,14 @@ declare global {
 // off by a couple of seconds moves the anchor to roughly where the reaction started.
 const REACTION_BACK_OFF_SECONDS = 2.5;
 
+// How the client gives the comment once the draft is paused. Speaking is the
+// faster turn, but recognition quality is not in our hands, so typing is a
+// first-class path rather than a fallback — both produce the same SpokenComment.
+export type CaptureMode = "speak" | "type";
+
 export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | null>) {
   const [comments, setComments] = useState<SpokenComment[]>([]);
+  const [captureMode, setCaptureMode] = useState<CaptureMode>("type");
   const [isListening, setIsListening] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [pausedAt, setPausedAt] = useState<number | null>(null);
@@ -58,6 +64,34 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
   const guessTranscriptRef = useRef("");
   // True for as long as the client is paused and still has the floor.
   const hasFloorRef = useRef(false);
+  const captureModeRef = useRef<CaptureMode>(captureMode);
+  captureModeRef.current = captureMode;
+
+  // The one place a comment is recorded, whether it was spoken or typed. The
+  // anchor is backed off here so neither path can forget to do it.
+  const appendComment = useCallback((capturedPausedAt: number, transcript: string) => {
+    setComments((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        pausedAt: capturedPausedAt,
+        anchorTimestamp: Math.max(0, capturedPausedAt - REACTION_BACK_OFF_SECONDS),
+        transcript,
+      },
+    ]);
+  }, []);
+
+  // Typed comments anchor to wherever the draft is sitting — the pause position
+  // when the client stopped to write, or the live position if they never did.
+  const addTypedComment = useCallback(
+    (typed: string) => {
+      const transcript = typed.trim();
+      if (!transcript) return;
+      const capturedAt = pausedAtRef.current ?? audioRef.current?.currentTime ?? 0;
+      appendComment(capturedAt, transcript);
+    },
+    [appendComment, audioRef]
+  );
 
   useEffect(() => {
     const audioEl = audioRef.current;
@@ -149,19 +183,6 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
 
     recognitionRef.current = recognition;
 
-    function appendComment(capturedPausedAt: number, transcript: string) {
-      const anchorTimestamp = Math.max(0, capturedPausedAt - REACTION_BACK_OFF_SECONDS);
-      setComments((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          pausedAt: capturedPausedAt,
-          anchorTimestamp,
-          transcript,
-        },
-      ]);
-    }
-
     const handlePause = () => {
       const currentTime = audioEl.currentTime;
       pausedAtRef.current = currentTime;
@@ -170,6 +191,11 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
       hasFloorRef.current = true;
       setPausedAt(currentTime);
       setLiveTranscript("");
+
+      // In typing mode the microphone stays out of it entirely; the client is
+      // about to write the comment instead.
+      if (captureModeRef.current === "type") return;
+
       setIsListening(true);
       try {
         recognition.start();
@@ -204,7 +230,16 @@ export function usePauseToComment(audioRef: React.RefObject<HTMLAudioElement | n
       }
       recognitionRef.current = null;
     };
-  }, [audioRef]);
+  }, [audioRef, appendComment]);
 
-  return { comments, isListening, liveTranscript, pausedAt, isSupported };
+  return {
+    comments,
+    isListening,
+    liveTranscript,
+    pausedAt,
+    isSupported,
+    captureMode,
+    setCaptureMode,
+    addTypedComment,
+  };
 }

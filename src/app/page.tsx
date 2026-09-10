@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePauseToComment } from "@/lib/pause-to-comment";
 import TicketList from "@/components/TicketList";
+import { formatTimestampLabel } from "@/lib/timestamp-label";
 import type { RevisionSession, SpokenComment } from "@/lib/ticket-schema";
 
 function formatTimestamp(seconds: number): string {
@@ -14,8 +15,18 @@ function formatTimestamp(seconds: number): string {
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { comments, isListening, liveTranscript, isSupported } =
-    usePauseToComment(audioRef);
+  const {
+    comments,
+    isListening,
+    liveTranscript,
+    pausedAt,
+    isSupported,
+    captureMode,
+    setCaptureMode,
+    addTypedComment,
+  } = usePauseToComment(audioRef);
+
+  const [draftComment, setDraftComment] = useState("");
 
   const [session, setSession] = useState<RevisionSession | null>(null);
   const [isStructuring, setIsStructuring] = useState(false);
@@ -58,6 +69,11 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  function handleSubmitTypedComment() {
+    addTypedComment(draftComment);
+    setDraftComment("");
+  }
+
   async function handleBuildTickets() {
     setIsStructuring(true);
     setError(null);
@@ -85,8 +101,8 @@ export default function Home() {
         <header className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Revision Room</h1>
           <p className="text-sm text-zinc-600">
-            Play the draft. Pause when something strikes you and say it out loud —
-            the moment you paused becomes the anchor for that comment.
+            Play the draft. Pause when something strikes you and say it — or type
+            it — and the moment you paused becomes the anchor for that comment.
           </p>
         </header>
 
@@ -94,22 +110,78 @@ export default function Home() {
           <audio
             ref={audioRef}
             controls
-            src="/fixtures/draft-track.mp3"
+            src="/fixtures/salt-and-water.mp3"
             className="w-full"
           />
-          <p className="text-xs text-zinc-500">
-            Spacebar toggles play/pause. Pausing starts listening for your comment;
-            resuming captures it.
-          </p>
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <span>Comment by</span>
+            {(["type", "speak"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setCaptureMode(mode)}
+                className={
+                  captureMode === mode
+                    ? "rounded-full bg-zinc-900 px-3 py-1 font-medium text-white"
+                    : "rounded-full bg-zinc-100 px-3 py-1 text-zinc-600"
+                }
+              >
+                {mode === "type" ? "Typing" : "Speaking"}
+              </button>
+            ))}
+            <span className="ml-1">
+              {captureMode === "type"
+                ? "Pause the draft, then write what struck you."
+                : "Pausing starts listening; resuming captures it."}
+            </span>
+          </div>
 
-          {!isSupported && (
+          {captureMode === "type" && (
+            <div className="flex flex-col gap-2 rounded border border-zinc-200 bg-zinc-50 p-3">
+              <label
+                htmlFor="typed-comment"
+                className="text-xs font-medium text-zinc-600"
+              >
+                Comment at {formatTimestampLabel(pausedAt ?? 0)}
+                {pausedAt === null && " (live position)"}
+              </label>
+              <textarea
+                id="typed-comment"
+                value={draftComment}
+                onChange={(event) => setDraftComment(event.target.value)}
+                onKeyDown={(event) => {
+                  // Enter files the comment; the draft is one thought, not an essay.
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    handleSubmitTypedComment();
+                  }
+                }}
+                rows={2}
+                placeholder="e.g. verse two feels corny, nobody says synergy in the atrium"
+                className="w-full resize-y rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleSubmitTypedComment}
+                  disabled={draftComment.trim().length === 0}
+                  className="w-fit rounded-full bg-zinc-900 px-4 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-300"
+                >
+                  Add comment
+                </button>
+                <span className="text-xs text-zinc-400">Enter to add</span>
+              </div>
+            </div>
+          )}
+
+          {captureMode === "speak" && !isSupported && (
             <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
               This browser does not support SpeechRecognition. Revision Room's
               pause-to-comment capture requires Chrome.
             </p>
           )}
 
-          {isListening && (
+          {captureMode === "speak" && isListening && (
             <div className="flex items-center gap-2 rounded bg-rose-50 px-3 py-2 text-sm text-rose-700">
               <span className="h-2 w-2 animate-pulse rounded-full bg-rose-600" />
               <span className="font-medium">Listening — say what struck you</span>
@@ -126,7 +198,7 @@ export default function Home() {
           </h2>
           {comments.length === 0 ? (
             <p className="text-sm text-zinc-500">
-              No comments captured yet. Pause the draft and speak your reaction.
+              No comments captured yet. Pause the draft and give your reaction.
             </p>
           ) : (
             <ol className="flex flex-col gap-2">

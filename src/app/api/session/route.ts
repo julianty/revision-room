@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   const session: RevisionSession = {
     sessionId: crypto.randomUUID(),
-    trackId: "draft-track",
+    trackId: "salt-and-water",
     createdAt: new Date().toISOString(),
     comments: body.comments,
     tickets,
